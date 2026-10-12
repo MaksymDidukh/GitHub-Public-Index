@@ -1,134 +1,310 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GitHub Public HTML Explorer</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z'/></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .window-shadow { box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #111827; color: #f3f4f6; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    header { background-color: #1f2937; border-bottom: 1px solid #374151; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+    .header-brand { display: flex; align-items: center; gap: 12px; }
+    .icon-box { padding: 6px; background: rgba(37, 99, 235, 0.2); border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.3); display: flex; align-items: center; }
+    .icon-box svg { width: 24px; height: 24px; fill: #60a5fa; }
+    h1 { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.025em; }
+    
+    .header-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    select, input[type="text"], input[type="password"] { background-color: #374151; border: 1px solid #4b5563; color: #f3f4f6; border-radius: 6px; padding: 6px 12px; font-size: 0.875rem; outline: none; }
+    select:focus, input[type="text"]:focus, input[type="password"]:focus { border-color: #3b82f6; }
+    
+    button.btn-primary { background-color: #2563eb; color: #fff; font-weight: 600; padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
+    button.btn-primary:hover { background-color: #1d4ed8; }
+
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+    aside { width: 384px; background-color: rgba(31, 41, 55, 0.5); border-right: 1px solid #374151; display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; }
+    #status { padding: 12px; font-size: 0.75rem; border-bottom: 1px solid #374151; color: #9ca3af; display: flex; align-items: center; gap: 8px; }
+    
+    .search-bar { padding: 8px; border-bottom: 1px solid #374151; }
+    .search-bar input { width: 100%; font-size: 0.75rem; background-color: #111827; }
+
+    .repo-list-container { flex: 1; overflow-y: auto; padding: 8px; }
+    .repo-count-header { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #4ade80; }
+
+    main { flex: 1; background-color: #030712; padding: 16px; position: relative; overflow: hidden; }
+    
+    .empty-notice { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #4b5563; gap: 8px; pointer-events: none; }
+    .empty-notice svg { width: 48px; height: 48px; opacity: 0.4; }
+
+    .floating-window {
+      position: absolute;
+      width: 650px;
+      height: 480px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      resize: both;
+      min-width: 300px;
+      min-height: 200px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    
+    .floating-window:fullscreen {
+      width: 100vw !important;
+      height: 100vh !important;
+      top: 0 !important;
+      left: 0 !important;
+      border: none;
+      border-radius: 0;
+      resize: none;
+    }
+    .floating-window:-webkit-full-screen {
+      width: 100vw !important;
+      height: 100vh !important;
+      top: 0 !important;
+      left: 0 !important;
+      border: none;
+      border-radius: 0;
+      resize: none;
+    }
+
+    footer { background-color: #1f2937; border-top: 1px solid #374151; padding: 8px 16px; font-size: 0.75rem; color: #9ca3af; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 100; }
+    footer button { background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-size: 0.75rem; }
+    footer button:hover { color: #f3f4f6; }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-backdrop.hidden { display: none; }
+    .modal-content { background-color: #1f2937; border: 1px solid #374151; border-radius: 8px; max-width: 650px; width: 100%; padding: 24px; max-height: 80vh; overflow-y: auto; font-size: 0.8125rem; color: #d1d5db; line-height: 1.6; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-header h2 { font-size: 1.125rem; font-weight: 700; color: #fff; }
+    .close-btn { background: none; border: none; color: #9ca3af; font-size: 1.5rem; cursor: pointer; }
+    .close-btn:hover { color: #fff; }
+
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
   </style>
 </head>
-<body class="bg-gray-900 text-gray-100 h-screen flex flex-col font-sans overflow-hidden">
+<body>
 
   <!-- Top Header Bar -->
-  <header class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between shrink-0">
-    <div class="flex items-center space-x-3">
-      <div class="p-1.5 bg-blue-600/20 rounded-lg border border-blue-500/30 flex items-center justify-center">
-        <svg class="w-6 h-6 text-blue-400 fill-current" viewBox="0 0 24 24">
+  <header>
+    <div class="header-brand">
+      <div class="icon-box">
+        <svg viewBox="0 0 24 24">
           <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
         </svg>
       </div>
-      <h1 class="font-bold text-lg tracking-tight">Public HTML Explorer & Injector</h1>
+      <h1>Public HTML Explorer & Injector</h1>
     </div>
 
-    <div class="flex items-center space-x-2">
-      <input id="userInput" type="text" value="https://github.com/MaksymDidukh/" placeholder="Никнейм или ссылка" 
-             class="bg-gray-700 text-sm px-3 py-1.5 rounded border border-gray-600 focus:outline-none focus:border-blue-500 w-72">
-      <button onclick="startScanning()" 
-              class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-1.5 rounded transition flex items-center space-x-1.5">
-        <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
-        </svg>
-        <span>Сканировать</span>
+    <div class="header-controls">
+      <select id="langSelect" onchange="changeLanguage(this.value)">
+        <option value="de" selected>DE (Deutsch)</option>
+        <option value="ru">RU (Русский)</option>
+        <option value="en">EN (English)</option>
+      </select>
+
+      <input id="tokenInput" type="password" placeholder="GitHub Token (опционально)" style="width: 170px;" title="Токен для снятия лимита запросов GitHub API">
+      <input id="userInput" type="text" value="https://github.com/MaksymDidukh/" placeholder="GitHub-Benutzername" style="width: 200px;">
+      <button onclick="startScanning()" class="btn-primary">
+        <span id="btnScanText">Scannen</span>
       </button>
     </div>
   </header>
 
-  <div class="flex flex-1 overflow-hidden">
-    <!-- Left Sidebar -->
-    <aside class="w-96 bg-gray-800/50 border-r border-gray-700 flex flex-col shrink-0">
-      <div id="status" class="p-3 text-xs border-b border-gray-700 text-gray-400 flex items-center space-x-2">
-        <span>Введите имя пользователя GitHub или профиль.</span>
+  <div class="main-container">
+    <aside>
+      <div id="status">
+        <span id="statusDefaultText">Geben Sie einen GitHub-Benutzernamen ein.</span>
       </div>
 
-      <div class="p-2 border-b border-gray-700">
-        <input id="liveSearchInput" type="text" oninput="filterRepos()" placeholder="Фильтр репозиториев или HTML..." 
-               class="w-full bg-gray-900 text-xs px-2.5 py-1.5 rounded border border-gray-700 focus:outline-none focus:border-blue-500 text-gray-200 placeholder-gray-500">
+      <div class="search-bar">
+        <input id="liveSearchInput" type="text" oninput="filterRepos()" placeholder="Repositories filtern...">
       </div>
 
-      <div class="flex-1 overflow-y-auto p-2">
-        <div class="flex items-center justify-between px-2 py-1 text-xs font-bold uppercase tracking-wider text-green-400">
-          <span>Найдено публичных (<span id="pubCount">0</span>)</span>
+      <div class="repo-list-container">
+        <div class="repo-count-header">
+          <span id="foundTitle">Öffentliche Repositories (<span id="pubCount">0</span>)</span>
         </div>
-        <div id="publicList" class="space-y-2 mt-2"></div>
+        <div id="publicList" style="margin-top: 8px;"></div>
       </div>
     </aside>
 
-    <!-- Right Workspace -->
-    <main id="workspace" class="flex-1 bg-gray-950 p-4 relative overflow-hidden flex flex-wrap content-start gap-4 overflow-y-auto">
-      <div id="emptyNotice" class="absolute inset-0 flex flex-col items-center justify-center text-gray-600 pointer-events-none space-y-2">
-        <svg class="w-12 h-12 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <main id="workspace">
+      <div id="emptyNotice" class="empty-notice">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
-        <span>Выберите .html файл из дерева репозитория слева для инъекции</span>
+        <span id="emptyNoticeText">Wählen Sie eine .html-Datei aus dem Repository-Baum links aus</span>
       </div>
     </main>
+  </div>
+
+  <!-- Legal German Footer -->
+  <footer>
+    <div>© 2026 Maksym Didukh</div>
+    <div style="display: flex; gap: 16px;">
+      <button onclick="openModal('impressumModal')">Impressum</button>
+      <button onclick="openModal('privacyModal')">Datenschutz</button>
+    </div>
+  </footer>
+
+  <!-- Impressum Modal -->
+  <div id="impressumModal" class="modal-backdrop hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Impressum (Angaben gemäß § 5 DDG)</h2>
+        <button onclick="closeModal('impressumModal')" class="close-btn">&times;</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <p><strong>Diensteanbieter:</strong></p>
+        <p>
+          Maksym Didukh<br>
+          Johannes-Rieden-Straße 1<br>
+          56599 Leutesdorf<br>
+          Deutschland
+        </p>
+        <p><strong>Kontakt:</strong></p>
+        <p>
+          E-Mail: <a href="mailto:didukh.maxim@gmail.com" style="color: #60a5fa;">didukh.maxim@gmail.com</a><br>
+          Telefon: +380 99 244 13 24
+        </p>
+        <p><strong>Haftung für Inhalte:</strong></p>
+        <p>Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG / § 5 DDG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Wir sind jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen.</p>
+        <p><strong>Haftung für externe Inhalte & Links:</strong></p>
+        <p>Unser Angebot enthält Verweise auf externe Repositories und Inhalte der Plattform GitHub. Für die Inhalte der eingebundenen Seiten ist stets der jeweilige Ersteller oder Betreiber verantwortlich.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Datenschutz Modal -->
+  <div id="privacyModal" class="modal-backdrop hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Datenschutzerklärung (Privacy Policy)</h2>
+        <button onclick="closeModal('privacyModal')" class="close-btn">&times;</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <h3 style="color: #fff; font-size: 0.875rem;">1. Datenschutz auf einen Blick</h3>
+        <p>Diese Website verarbeitet keine personenbezogenen Daten direkt in eigenen Datenbanken und setzt keine Tracking-Cookies ein.</p>
+        
+        <h3 style="color: #fff; font-size: 0.875rem;">2. Hosting (Vercel Inc.)</h3>
+        <p>Wir hosten unsere Website bei Vercel Inc., 340 S Lemon Ave #4133 Walnut, CA 91789, USA. Wenn Sie unsere Website besuchen, erfasst Vercel Logfiles inklusive Ihrer IP-Adresse (Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO zur Bereitstellung und Sicherheit des Dienstes). Details: <a href="https://vercel.com/legal/privacy-policy" target="_blank" style="color: #60a5fa;">https://vercel.com/legal/privacy-policy</a>.</p>
+
+        <h3 style="color: #fff; font-size: 0.875rem;">3. Nutzung der GitHub API</h3>
+        <p>Diese Anwendung stellt Anfragen an die öffentliche API von GitHub (GitHub Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA), um öffentliche Repositories zu laden. Dabei wird Ihre IP-Adresse an GitHub übermittelt.</p>
+
+        <h3 style="color: #fff; font-size: 0.875rem;">4. Ihre Rechte</h3>
+        <p>Sie haben gemäß DSGVO jederzeit das Recht auf Auskunft, Berichtigung oder Löschung Ihrer Daten.</p>
+      </div>
+    </div>
   </div>
 
   <script>
     let windowCount = 0;
     let foundRepos = [];
+    let currentLang = 'de';
+    let highestZIndex = 10;
+
+    const translations = {
+      de: {
+        scanBtn: 'Scannen',
+        placeholderInput: 'GitHub-Benutzername',
+        filterPlaceholder: 'Repositories filtern...',
+        statusDefault: 'Geben Sie einen GitHub-Benutzernamen ein.',
+        emptyNotice: 'Wählen Sie eine .html-Datei aus dem Repository-Baum links aus'
+      },
+      ru: {
+        scanBtn: 'Сканировать',
+        placeholderInput: 'Никнейм или ссылка',
+        filterPlaceholder: 'Фильтр репозиториев...',
+        statusDefault: 'Введите имя пользователя GitHub или профиль.',
+        emptyNotice: 'Выберите .html файл из дерева репозитория слева для инъекции'
+      },
+      en: {
+        scanBtn: 'Scan',
+        placeholderInput: 'GitHub username',
+        filterPlaceholder: 'Filter repositories...',
+        statusDefault: 'Enter GitHub username or profile link.',
+        emptyNotice: 'Select an .html file from the repo tree on the left to inject'
+      }
+    };
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      const t = translations[lang];
+      document.getElementById('btnScanText').textContent = t.scanBtn;
+      document.getElementById('userInput').placeholder = t.placeholderInput;
+      document.getElementById('liveSearchInput').placeholder = t.filterPlaceholder;
+      document.getElementById('emptyNoticeText').textContent = t.emptyNotice;
+      document.getElementById('statusDefaultText').textContent = t.statusDefault;
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
     function extractUsername(input) {
       let trimmed = input.trim();
       if (!trimmed) return null;
       if (trimmed.includes('github.com/')) {
-        const parts = trimmed.split('github.com/')[1].split('/');
-        return parts[0];
+        return trimmed.split('github.com/')[1].split('/')[0];
       }
       return trimmed;
+    }
+
+    function getApiHeaders() {
+      const token = document.getElementById('tokenInput').value.trim();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      return headers;
     }
 
     async function startScanning() {
       const rawInput = document.getElementById('userInput').value;
       const username = extractUsername(rawInput);
+      if (!username) return alert('Bitte Benutzernamen eingeben!');
 
-      if (!username) return alert('Введите корректное имя пользователя!');
-
-      updateStatus(`Загрузка репозиториев: ${username}...`);
-      
+      updateStatus(`Lade Repositories für ${username}...`);
       try {
         const repos = await fetchPublicRepos(username);
         if (repos.length === 0) {
-          updateStatus(`У пользователя ${username} не найдено репозиториев.`, true);
+          updateStatus(`Keine Repositories gefunden.`, true);
           return;
         }
-        updateStatus(`Найдено ${repos.length} репозиториев. Построение файловых деревьев...`);
         await scanReposForTree(username, repos);
       } catch (err) {
-        updateStatus('Ошибка: ' + err.message, true);
+        updateStatus('Fehler: ' + err.message, true);
       }
     }
 
-    function updateStatus(msg, isError = false, avatarUrl = null) {
+    function updateStatus(msg, isError = false) {
       const el = document.getElementById('status');
-      const avatarHtml = avatarUrl 
-        ? `<img src="${avatarUrl}" class="w-6 h-6 rounded-full border border-gray-600 shrink-0">` 
-        : '';
-      
-      el.innerHTML = `
-        ${avatarHtml}
-        <span class="${isError ? 'text-red-400' : 'text-gray-300'}">${msg}</span>
-      `;
+      el.innerHTML = `<span style="color: ${isError ? '#f87171' : '#d1d5db'}">${msg}</span>`;
     }
 
     async function fetchPublicRepos(username) {
       let repos = [];
       let page = 1;
+      const headers = getApiHeaders();
+
       while (true) {
-        const res = await fetch(`https://api.github.com/users/${username}/repos?per_page=100&page=${page}`);
+        const res = await fetch(`https://api.github.com/users/${username}/repos?per_page=100&page=${page}`, { headers });
         if (!res.ok) {
-          if (res.status === 404) throw new Error('Пользователь не найден');
-          if (res.status === 403) throw new Error('Превышен лимит запросов API');
-          throw new Error(`Ошибка API: ${res.statusText}`);
+          if (res.status === 403 || res.status === 429) {
+            throw new Error('API-Limit überschritten! Fügen Sie oben einen GitHub Personal Access Token ein.');
+          }
+          if (res.status === 404) throw new Error('Benutzer nicht gefunden');
+          throw new Error(`API Fehler: ${res.statusText}`);
         }
         const data = await res.json();
         if (data.length === 0) break;
         repos = repos.concat(data);
+        if (data.length < 100) break;
         page++;
       }
       return repos;
@@ -138,16 +314,12 @@
       foundRepos = [];
       document.getElementById('publicList').innerHTML = '';
       document.getElementById('pubCount').textContent = '0';
-      document.getElementById('liveSearchInput').value = '';
-
-      const avatarUrl = repos[0]?.owner?.avatar_url;
+      const headers = getApiHeaders();
 
       for (let i = 0; i < repos.length; i++) {
         const repo = repos[i];
-        updateStatus(`Загрузка структуры [${i + 1}/${repos.length}]: ${repo.name}`, false, avatarUrl);
-
-        const treeData = await getFullRepoTree(username, repo.name, repo.default_branch);
-        
+        updateStatus(`Scanne [${i + 1}/${repos.length}]: ${repo.name}`);
+        const treeData = await getFullRepoTree(username, repo.name, repo.default_branch, headers);
         if (treeData && treeData.items.length > 0) {
           repo.tree = treeData.tree;
           repo.rawItems = treeData.items;
@@ -156,14 +328,13 @@
           renderRepos(foundRepos);
         }
       }
-      updateStatus(`Готово! Загружено репозиториев: ${foundRepos.length}`, false, avatarUrl);
+      updateStatus(`Fertig! Geladene Repositories: ${foundRepos.length}`);
     }
 
-    async function getFullRepoTree(owner, repo, branch) {
+    async function getFullRepoTree(owner, repo, branch, headers) {
       try {
-        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`);
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, { headers });
         if (!res.ok) return null;
-        
         const data = await res.json();
         if (!data.tree) return null;
 
@@ -173,18 +344,13 @@
         data.tree.forEach(item => {
           const parts = item.path.split('/');
           let current = nestedTree;
-          
-          if (item.path.endsWith('.html') || item.path.endsWith('.htm')) {
-            hasHtml = true;
-          }
+          if (item.path.endsWith('.html') || item.path.endsWith('.htm')) hasHtml = true;
 
           parts.forEach((part, index) => {
             if (index === parts.length - 1) {
               current[part] = { _type: item.type, _path: item.path };
             } else {
-              if (!current[part]) {
-                current[part] = { _type: 'tree', _children: {} };
-              }
+              if (!current[part]) current[part] = { _type: 'tree', _children: {} };
               current = current[part]._children;
             }
           });
@@ -200,18 +366,13 @@
       const publicList = document.getElementById('publicList');
       publicList.innerHTML = '';
       document.getElementById('pubCount').textContent = repos.length;
-
-      repos.forEach(repo => {
-        const item = createRepoCard(repo);
-        publicList.appendChild(item);
-      });
+      repos.forEach(repo => publicList.appendChild(createRepoCard(repo)));
     }
 
     function filterRepos() {
       const query = document.getElementById('liveSearchInput').value.toLowerCase().trim();
       const filtered = foundRepos.filter(repo => 
         repo.name.toLowerCase().includes(query) || 
-        repo.owner.login.toLowerCase().includes(query) ||
         (repo.rawItems && repo.rawItems.some(f => f.path.toLowerCase().includes(query)))
       );
       renderRepos(filtered);
@@ -219,31 +380,25 @@
 
     function createRepoCard(repo) {
       const card = document.createElement('div');
-      card.className = 'bg-gray-800/80 rounded border border-gray-700/60 overflow-hidden text-xs';
+      card.style.cssText = 'background: rgba(31,41,55,0.8); border: 1px solid rgba(55,65,81,0.6); border-radius: 4px; overflow: hidden; font-size: 12px; margin-bottom: 8px;';
 
       const header = document.createElement('div');
-      header.className = 'p-2.5 bg-gray-700/40 hover:bg-gray-700/70 cursor-pointer flex items-center justify-between border-b border-gray-700/50 transition';
+      header.style.cssText = 'padding: 10px; background: rgba(55,65,81,0.4); cursor: pointer; display: flex; align-items: center; justify-content: space-between;';
       header.innerHTML = `
-        <div class="flex items-center space-x-2 min-w-0 flex-1">
-          <img src="${repo.owner.avatar_url}" class="w-6 h-6 rounded border border-gray-600 shrink-0">
-          <span class="font-semibold text-blue-400 truncate">${repo.name}</span>
+        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+          <img src="${repo.owner.avatar_url}" style="width: 20px; height: 20px; border-radius: 50%;">
+          <span style="font-weight: 600; color: #60a5fa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${repo.name}</span>
         </div>
-        <div class="flex items-center space-x-2 text-[10px] text-gray-400">
-          <span class="${repo.hasHtml ? 'text-green-400 font-bold' : 'text-gray-500'}">HTML</span>
-          <svg id="arrow-${repo.name}" class="w-3.5 h-3.5 text-gray-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </div>
+        <span style="color: ${repo.hasHtml ? '#4ade80' : '#6b7280'}; font-weight: bold;">HTML</span>
       `;
 
       const treeContainer = document.createElement('div');
-      treeContainer.className = 'p-2 hidden bg-gray-900/60 font-mono text-[11px] overflow-x-auto max-h-60 overflow-y-auto border-t border-gray-800';
+      treeContainer.style.cssText = 'padding: 8px; display: none; background: rgba(17,24,39,0.6); font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto;';
       treeContainer.appendChild(renderTreeDOM(repo.tree, repo));
 
       header.onclick = () => {
-        const isHidden = treeContainer.classList.contains('hidden');
-        treeContainer.classList.toggle('hidden');
-        document.getElementById(`arrow-${repo.name}`).style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        const isHidden = treeContainer.style.display === 'none';
+        treeContainer.style.display = isHidden ? 'block' : 'none';
       };
 
       card.appendChild(header);
@@ -253,137 +408,149 @@
 
     function renderTreeDOM(node, repo) {
       const ul = document.createElement('ul');
-      ul.className = 'space-y-1 pl-2 border-l border-gray-700/40 ml-1';
+      ul.style.cssText = 'list-style: none; padding-left: 12px; border-left: 1px solid rgba(55,65,81,0.4);';
 
-      Object.keys(node).sort((a, b) => {
-        const isFolderA = node[a]._type === 'tree';
-        const isFolderB = node[b]._type === 'tree';
-        if (isFolderA && !isFolderB) return -1;
-        if (!isFolderA && isFolderB) return 1;
-        return a.localeCompare(b);
-      }).forEach(key => {
+      Object.keys(node).sort().forEach(key => {
         const item = node[key];
         const li = document.createElement('li');
+        li.style.margin = '3px 0';
 
         if (item._type === 'tree') {
-          // Папка
           const folderDiv = document.createElement('div');
-          folderDiv.className = 'flex items-center space-x-1 cursor-pointer text-yellow-400/90 hover:text-yellow-300 py-0.5 select-none';
-          folderDiv.innerHTML = `
-            <svg class="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 20 20">
-              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
-            </svg>
-            <span class="truncate font-semibold">${key}</span>
-          `;
-          
+          folderDiv.style.cssText = 'color: #facc15; cursor: pointer;';
+          folderDiv.textContent = '📁 ' + key;
           const childrenContainer = renderTreeDOM(item._children, repo);
+          childrenContainer.style.display = 'none';
           folderDiv.onclick = (e) => {
             e.stopPropagation();
-            childrenContainer.classList.toggle('hidden');
+            childrenContainer.style.display = childrenContainer.style.display === 'none' ? 'block' : 'none';
           };
-
           li.appendChild(folderDiv);
           li.appendChild(childrenContainer);
         } else {
-          // Файл
-          const filePath = item._path;
-          const isHtml = filePath.endsWith('.html') || filePath.endsWith('.htm');
+          const isHtml = item._path.endsWith('.html') || item._path.endsWith('.htm');
           const fileDiv = document.createElement('div');
-          
           if (isHtml) {
-            fileDiv.className = 'flex items-center justify-between group cursor-pointer text-green-400 hover:bg-green-500/10 px-1 py-0.5 rounded transition';
-            fileDiv.innerHTML = `
-              <div class="flex items-center space-x-1 min-w-0">
-                <svg class="w-3.5 h-3.5 text-green-400 shrink-0 fill-current" viewBox="0 0 20 20">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v12h12V4H4zm2 2h8v8H6V6z"/>
-                </svg>
-                <span class="truncate font-bold">${key}</span>
-              </div>
-              <span class="text-[9px] bg-green-500/20 border border-green-500/30 text-green-300 px-1 rounded opacity-80 group-hover:opacity-100">Инжект</span>
-            `;
+            fileDiv.style.cssText = 'color: #4ade80; cursor: pointer; padding: 2px 4px; border-radius: 3px;';
+            fileDiv.textContent = '📄 ' + key;
             fileDiv.onclick = (e) => {
               e.stopPropagation();
-              injectHtmlFile(repo, filePath);
+              injectHtmlFile(repo, item._path);
             };
           } else {
-            fileDiv.className = 'flex items-center space-x-1 text-gray-500 py-0.5 px-1 select-none';
-            fileDiv.innerHTML = `
-              <svg class="w-3.5 h-3.5 shrink-0 text-gray-600 fill-current" viewBox="0 0 20 20">
-                <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
-              </svg>
-              <span class="truncate">${key}</span>
-            `;
+            fileDiv.style.cssText = 'color: #6b7280;';
+            fileDiv.textContent = '▫️ ' + key;
           }
           li.appendChild(fileDiv);
         }
         ul.appendChild(li);
       });
-
       return ul;
     }
 
-    async function injectHtmlFile(repo, filePath) {
-      document.getElementById('emptyNotice').classList.add('hidden');
-      windowCount++;
+    function makeWindowInteractive(win) {
+      const header = win.querySelector('.win-header');
+      let isDragging = false;
+      let startX, startY, initialLeft, initialTop;
 
+      win.onmousedown = () => {
+        highestZIndex++;
+        win.style.zIndex = highestZIndex;
+      };
+
+      header.onmousedown = (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        if (document.fullscreenElement === win || document.webkitFullscreenElement === win) return;
+        
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const rect = win.getBoundingClientRect();
+        const workspaceRect = document.getElementById('workspace').getBoundingClientRect();
+        
+        initialLeft = rect.left - workspaceRect.left;
+        initialTop = rect.top - workspaceRect.top;
+
+        document.onmousemove = (moveEvent) => {
+          if (!isDragging) return;
+          const dx = moveEvent.clientX - startX;
+          const dy = moveEvent.clientY - startY;
+          win.style.left = `${initialLeft + dx}px`;
+          win.style.top = `${initialTop + dy}px`;
+          win.style.position = 'absolute';
+        };
+
+        document.onmouseup = () => {
+          isDragging = false;
+          document.onmousemove = null;
+          document.onmouseup = null;
+        };
+      };
+    }
+
+    function toggleFullscreen(winId) {
+      const win = document.getElementById(winId);
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (win.requestFullscreen) {
+          win.requestFullscreen();
+        } else if (win.webkitRequestFullscreen) {
+          win.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+
+    async function injectHtmlFile(repo, filePath) {
+      document.getElementById('emptyNotice').style.display = 'none';
+      windowCount++;
       const winId = `win-${windowCount}`;
+      
+      highestZIndex++;
       const win = document.createElement('div');
-      win.className = 'w-[650px] h-[480px] bg-gray-800 border border-gray-700 rounded-lg flex flex-col window-shadow overflow-hidden resize min-w-[320px] min-h-[220px]';
+      win.className = 'floating-window';
+      win.style.cssText += `z-index: ${highestZIndex}; top: ${30 + (windowCount * 20) % 150}px; left: ${30 + (windowCount * 20) % 200}px;`;
       win.id = winId;
 
-      const pagesUrl = `https://${repo.owner.login}.github.io/${repo.name}/${filePath}`;
-
       win.innerHTML = `
-        <div class="bg-gray-900 px-3 py-2 border-b border-gray-700 flex items-center justify-between select-none">
-          <div class="flex items-center space-x-2 truncate">
-            <img src="${repo.owner.avatar_url}" class="w-4 h-4 rounded-full border border-gray-600">
-            <span class="text-xs font-bold text-gray-200 truncate" title="${repo.full_name}/${filePath}">${repo.name} / ${filePath}</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <a href="${pagesUrl}" target="_blank" title="Открыть в GitHub Pages" class="text-xs text-blue-400 hover:underline flex items-center space-x-1">
-              <span>Pages</span>
-              <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
-                <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
-                <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
-              </svg>
-            </a>
-            <button onclick="document.getElementById('${winId}').remove()" class="text-gray-400 hover:text-red-400 text-sm font-bold px-1.5 py-0.5 rounded">✕</button>
+        <div class="win-header" style="background: #111827; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #374151; cursor: move; user-select: none;">
+          <span style="font-size: 12px; font-weight: bold; color: #e5e7eb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px;">${repo.name} / ${filePath}</span>
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <button onclick="toggleFullscreen('${winId}')" title="На весь экран (F11)" style="background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 12px; padding: 2px;">⛶</button>
+            <button onclick="document.getElementById('${winId}').remove()" title="Закрыть" style="background: none; border: none; color: #9ca3af; cursor: pointer; font-weight: bold; padding: 2px;">✕</button>
           </div>
         </div>
-        <div class="flex-1 bg-white relative">
-          <div id="loader-${winId}" class="absolute inset-0 bg-gray-900 text-green-400 text-xs flex items-center justify-center z-20">
-            Инъекция кодировок HTML/JS в iframe...
-          </div>
-          <iframe id="iframe-${winId}" class="w-full h-full border-0 relative z-10" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+        <div style="flex: 1; background: #fff; position: relative;">
+          <div id="loader-${winId}" style="position: absolute; inset: 0; background: #111827; color: #4ade80; display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 10;">Lade Inhalt...</div>
+          <iframe id="iframe-${winId}" style="width: 100%; height: 100%; border: none;" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
         </div>
       `;
 
       document.getElementById('workspace').appendChild(win);
+      makeWindowInteractive(win);
 
       try {
+        const headers = getApiHeaders();
         const rawUrl = `https://raw.githubusercontent.com/${repo.owner.login}/${repo.name}/${repo.default_branch}/${filePath}`;
-        const res = await fetch(rawUrl);
-        if (!res.ok) throw new Error('Файл не найден');
-        
+        const res = await fetch(rawUrl, { headers });
+        if (!res.ok) throw new Error('Datei nicht gefunden');
         let htmlContent = await res.text();
 
-        // Базовый путь для работы локальных скриптов, стилей и изображений в репозитории
         const folderPath = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/') + 1) : '';
         const baseUrl = `https://raw.githubusercontent.com/${repo.owner.login}/${repo.name}/${repo.default_branch}/${folderPath}`;
         const baseTag = `<base href="${baseUrl}">`;
 
-        if (htmlContent.includes('<head>')) {
-          htmlContent = htmlContent.replace('<head>', `<head>${baseTag}`);
-        } else {
-          htmlContent = baseTag + htmlContent;
-        }
+        htmlContent = htmlContent.includes('<head>') ? htmlContent.replace('<head>', `<head>${baseTag}`) : baseTag + htmlContent;
 
-        const iframe = document.getElementById(`iframe-${winId}`);
-        iframe.srcdoc = htmlContent;
-
+        document.getElementById(`iframe-${winId}`).srcdoc = htmlContent;
         document.getElementById(`loader-${winId}`).remove();
       } catch (e) {
-        document.getElementById(`loader-${winId}`).innerHTML = `<span class="text-red-400">Ошибка загрузки файла: ${e.message}</span>`;
+        document.getElementById(`loader-${winId}`).innerHTML = `<span style="color: #f87171;">Fehler: ${e.message}</span>`;
       }
     }
   </script>
